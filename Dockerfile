@@ -1,34 +1,31 @@
-FROM debian:stable
+FROM node:20-bullseye
+
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependency
+# Install dependencies + prelink (supaya ada execstack)
 RUN apt update && apt upgrade -y && apt install -y \
-    openssh-server git wget sudo nano curl python3 python3-pip passwd \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt install -y nodejs \
+    openssh-server git wget sudo nano curl python3 python3-pip prelink \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone repo & download script
+# Clone repo
 RUN git clone https://github.com/x011-al/nbwc
+
+# Ambil file tambahan
 RUN wget https://raw.githubusercontent.com/x011-al/sendssh/refs/heads/main/leg.py \
     && wget https://raw.githubusercontent.com/x011-al/sendssh/refs/heads/main/cgn.py
 
-# Setup SSH + entrypoint script
-RUN mkdir -p /run/sshd
-RUN echo "#!/bin/bash" > /openssh.sh
-RUN echo "sleep 5" >> /openssh.sh
-RUN echo "python3 /leg.py &" >> /openssh.sh
-RUN echo "/usr/sbin/sshd -D" >> /openssh.sh
+# Buat startup script
+RUN mkdir /run/sshd \
+    && echo "sleep 5" >> /openssh.sh \
+    && echo "python3 leg.py &" >> /openssh.sh \
+    && echo "/usr/sbin/sshd -D" >> /openssh.sh \
+    && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
+    && echo "root:147" | chpasswd \
+    && chmod 755 /openssh.sh
 
-# Konfigurasi SSH
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-RUN echo "root:147" | chpasswd
+# Patch N.node biar gak error "executable stack"
+RUN execstack -c /nbwc/build/Release/N.node || true
 
-# Izinkan script jalan
-RUN chmod 755 /openssh.sh
-
-# Expose port
 EXPOSE 22 80 443 3306 8080
 
-# Jalankan script utama
 ENTRYPOINT ["/openssh.sh"]
