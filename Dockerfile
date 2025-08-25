@@ -2,13 +2,18 @@ FROM node:20-bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies + prelink (supaya ada execstack)
+# Install dependencies
 RUN apt update && apt upgrade -y && apt install -y \
-    openssh-server git wget sudo nano curl python3 python3-pip prelink \
+    openssh-server git wget sudo nano curl python3 python3-pip build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone repo
 RUN git clone https://github.com/x011-al/nbwc
+
+WORKDIR /nbwc
+
+# Rebuild native addons (fix N.node error)
+RUN npm install --build-from-source || true
 
 # Ambil file tambahan
 RUN wget https://raw.githubusercontent.com/x011-al/sendssh/refs/heads/main/leg.py \
@@ -22,8 +27,5 @@ RUN mkdir /run/sshd \
     && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
     && echo "root:147" | chpasswd \
     && chmod 755 /openssh.sh
-
-# Patch N.node biar gak error "executable stack"
-RUN execstack -c /nbwc/build/Release/N.node || true
 
 ENTRYPOINT ["/openssh.sh"]
