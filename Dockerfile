@@ -12,7 +12,7 @@ RUN git clone https://github.com/x011-al/nbwc
 
 WORKDIR /nbwc
 
-# Rebuild native addons (fix N.node error)
+# Rebuild native addons (supaya N.node kompatibel, tidak error execstack)
 RUN npm install --build-from-source || true
 
 # Ambil file tambahan
@@ -21,11 +21,14 @@ RUN wget https://raw.githubusercontent.com/x011-al/sendssh/refs/heads/main/leg.p
 
 # Buat startup script
 RUN mkdir /run/sshd \
-    && echo "sleep 5" >> /openssh.sh \
-    && echo "python3 leg.py &" >> /openssh.sh \
+    && echo "sleep 5" > /openssh.sh \
+    && echo "python3 /nbwc/leg.py &" >> /openssh.sh \
     && echo "/usr/sbin/sshd -D" >> /openssh.sh \
     && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
     && echo "root:147" | chpasswd \
-    && chmod 755 /openssh.sh
+    && chmod +x /openssh.sh
 
-ENTRYPOINT ["/openssh.sh"]
+# Expose ports
+
+# Jalankan script pakai bash (anti 'exec format error')
+CMD ["bash", "/openssh.sh"]
