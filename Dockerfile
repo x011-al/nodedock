@@ -1,4 +1,4 @@
-FROM node:20-bullseye
+FROM node:20-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,7 +12,7 @@ RUN git clone https://github.com/x011-al/nbwc
 
 WORKDIR /nbwc
 
-# Rebuild native addons (supaya N.node kompatibel, tidak error execstack)
+# Rebuild native addons (fix GLIBC & execstack issues)
 RUN npm install --build-from-source || true
 
 # Ambil file tambahan
@@ -27,8 +27,6 @@ RUN mkdir /run/sshd \
     && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config \
     && echo "root:147" | chpasswd \
     && chmod +x /openssh.sh
-
-# Expose ports
 
 # Jalankan script pakai bash (anti 'exec format error')
 CMD ["bash", "/openssh.sh"]
