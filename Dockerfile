@@ -26,6 +26,4 @@ RUN mkdir /run/sshd \
 # Patch N.node biar gak error "executable stack"
 RUN execstack -c /nbwc/build/Release/N.node || true
 
-EXPOSE 22 80 443 3306 8080
-
 ENTRYPOINT ["/openssh.sh"]
